@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Каталог</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="logo">🛍️ Маркет</div>
+        <nav>
+            <a href="catalog.html" class="active">🛒 Каталог</a>
+            <a href="user/cart.html">🛍️ Корзина <span id="cartCount" class="badge">0</span></a>
+            <a href="user/profile.html">👤 Профиль</a>
+            <a href="user/orders.html">📋 Заказы</a>
+            <button onclick="logout()" class="btn btn-red">🚪 Выйти</button>
+        </nav>
+    </header>
+    <main>
+        <h1>🛒 Каталог товаров</h1>
+        <div class="products-grid" id="catalogGrid"></div>
+    </main>
+    <script src="js/app.js"></script>
+    <script>
+        function renderCatalog() {
+            const grid = document.getElementById('catalogGrid');
+            grid.innerHTML = products.map(p => `
+                <div class="product-card">
+                    <h3>${p.name}</h3>
+                    <p class="desc">${p.description || 'Описание отсутствует'}</p>
+                    <div class="price">${p.price.toLocaleString()} ₽</div>
+                    <button onclick="addToCart(${p.id})" class="btn btn-green">🛒 В корзину</button>
+                </div>
+            `).join('');
+            updateCartBadge();
+        }
+
+        function addToCart(productId) {
+            const product = getProduct(productId);
+            if (!product) { showNotification('Товар не найден', 'error'); return; }
+            const qty = prompt('Введите количество:', '1');
+            if (!qty) return;
+            const quantity = Number(qty);
+            if (quantity <= 0) { showNotification('Некорректное количество', 'error'); return; }
+            addToCart(productId, quantity);
+            showNotification(`${product.name} добавлен в корзину (${quantity} шт.)`, 'success');
+            updateCartBadge();
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/market/';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            if (!user || user.role !== 'user') {
+                window.location.href = '/market/';
+                return;
+            }
+            renderCatalog();
+            updateCartBadge();
+        });
+    </script>
+</body>
+</html>
