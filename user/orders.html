@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мои заказы</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header>
+        <div class="logo">🛍️ Маркет</div>
+        <nav>
+            <a href="../catalog.html">🛒 Каталог</a>
+            <a href="cart.html">🛍️ Корзина <span id="cartCount" class="badge">0</span></a>
+            <a href="profile.html">👤 Профиль</a>
+            <a href="orders.html" class="active">📋 Заказы</a>
+            <button onclick="logout()" class="btn btn-red">🚪 Выйти</button>
+        </nav>
+    </header>
+    <main>
+        <h1>📋 Мои заказы</h1>
+        <div class="card" id="ordersContainer"></div>
+    </main>
+    <script src="../js/app.js"></script>
+    <script>
+        function renderOrders() {
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            const userOrders = getUserOrders(user.id);
+            const container = document.getElementById('ordersContainer');
+            
+            if (userOrders.length === 0) {
+                container.innerHTML = `<div class="empty-state"><p>📋 У вас пока нет заказов</p><a href="../catalog.html" class="btn btn-green">Перейти в каталог</a></div>`;
+                return;
+            }
+            
+            const statusLabels = { 'new': '🆕 Новый', 'processing': '⚙️ В обработке', 'delivery': '🚚 Доставка', 'pvz': '📦 В ПВЗ', 'completed': '✅ Выполнен' };
+            
+            let html = `<h2>Все заказы (${userOrders.length})</h2>`;
+            [...userOrders].sort((a, b) => b.id - a.id).forEach(o => {
+                const productsList = o.products.map(item => {
+                    const p = getProduct(item.id);
+                    return `${p ? p.name : 'Товар удален'} × ${item.quantity}`;
+                }).join(', ');
+                html += `
+                    <div class="order-card">
+                        <div class="header">
+                            <span class="id">Заказ #${o.id}</span>
+                            <span class="date">📅 ${o.date}</span>
+                            <span class="status status-${o.status}">${statusLabels[o.status] || o.status}</span>
+                        </div>
+                        <div><strong>Товары:</strong> ${productsList}</div>
+                        <div class="total">💰 ${o.total.toLocaleString()} ₽</div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            updateCartBadge();
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/market/';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            if (!user || user.role !== 'user') { window.location.href = '/market/'; return; }
+            renderOrders();
+            updateCartBadge();
+        });
+    </script>
+</body>
+</html>
