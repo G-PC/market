@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ПВЗ - Панель</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header>
+        <div class="logo">🛍️ Маркет</div>
+        <nav>
+            <a href="dashboard.html" class="active">📊 Панель</a>
+            <button onclick="logout()" class="btn btn-red">🚪 Выйти</button>
+        </nav>
+    </header>
+    <main>
+        <h1>📦 ПВЗ: <span id="pvzName"></span></h1>
+        
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="number" id="totalOrders">0</div>
+                <div class="label">Всего заказов</div>
+            </div>
+            <div class="stat-item">
+                <div class="number" id="readyOrders">0</div>
+                <div class="label">Готовых к выдаче</div>
+            </div>
+        </div>
+        
+        <div id="ordersContainer"></div>
+    </main>
+    <script src="../js/app.js"></script>
+    <script>
+        function renderPVZOrders() {
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            const pvzOrders = getPVZOrders(user.id);
+            const container = document.getElementById('ordersContainer');
+            
+            document.getElementById('totalOrders').textContent = pvzOrders.length;
+            document.getElementById('readyOrders').textContent = pvzOrders.filter(o => o.status === 'pvz').length;
+            
+            if (pvzOrders.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>📭 Нет заказов в этом ПВЗ</p></div>';
+                return;
+            }
+            
+            const statusLabels = { 'new': '🆕 Новый', 'processing': '⚙️ В обработке', 'delivery': '🚚 В доставке', 'pvz': '📦 В ПВЗ', 'completed': '✅ Выдан' };
+            
+            container.innerHTML = pvzOrders.map(o => {
+                const buyer = users.find(u => u.id === o.userId);
+                const productsList = o.products.map(item => {
+                    const p = getProduct(item.id);
+                    return `${p ? p.name : 'Товар'} × ${item.quantity}`;
+                }).join(', ');
+                
+                let actions = '';
+                if (o.status === 'delivery') {
+                    actions = `<button onclick="markReady(${o.id})" class="btn btn-green" style="margin-top:10px;">✅ Готов к выдаче</button>`;
+                } else if (o.status === 'pvz') {
+                    actions = `<button onclick="markCompleted(${o.id})" class="btn btn-blue" style="margin-top:10px;">📦 Выдан</button>`;
+                }
+                
+                return `
+                    <div class="order-card">
+                        <div class="header">
+                            <span class="id">Заказ #${o.id}</span>
+                            <span class="date">📅 ${o.date}</span>
+                            <span class="status status-${o.status}">${statusLabels[o.status] || o.status}</span>
+                        </div>
+                        <div><strong>Покупатель:</strong> ${buyer ? buyer.name : 'Неизвестно'}</div>
+                        <div><strong>Товары:</strong> ${productsList}</div>
+                        <div class="total">💰 ${o.total.toLocaleString()} ₽</div>
+                        ${actions}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function markReady(orderId) {
+            if (updateOrderStatus(orderId, 'pvz')) {
+                showNotification('✅ Заказ готов к выдаче!', 'success');
+                renderPVZOrders();
+            }
+        }
+
+        function markCompleted(orderId) {
+            if (updateOrderStatus(orderId, 'completed')) {
+                showNotification('✅ Заказ выдан!', 'success');
+                renderPVZOrders();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/market/';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            if (!user || user.role !== 'pvz') { window.location.href = '/market/'; return; }
+            document.getElementById('pvzName').textContent = user.name;
+            renderPVZOrders();
+        });
+    </script>
+</body>
+</html>
