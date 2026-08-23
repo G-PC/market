@@ -59,6 +59,18 @@
             color: #9C27B0;
             font-weight: 600;
         }
+        .demo .admin {
+            color: #f44336;
+            font-weight: 600;
+        }
+        .demo .user {
+            color: #2196F3;
+            font-weight: 600;
+        }
+        .demo .pvz {
+            color: #4CAF50;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -74,30 +86,30 @@
         <!-- ===== ВХОД ===== -->
         <div class="form active" id="loginForm">
             <h2>Вход в систему</h2>
-            <form onsubmit="handleLogin(event)">
+            <form id="loginFormSubmit">
                 <div class="form-group">
                     <label>📧 Email</label>
-                    <input type="email" id="loginEmail" value="admin@mail.ru" required>
+                    <input type="email" id="loginEmail" placeholder="example@mail.ru" value="admin@mail.ru" required>
                 </div>
                 <div class="form-group">
                     <label>🔒 Пароль</label>
-                    <input type="password" id="loginPassword" value="123456" required>
+                    <input type="password" id="loginPassword" placeholder="Введите пароль" value="123456" required>
                 </div>
-                <button type="submit" class="btn btn-green">🔑 Войти</button>
+                <button type="submit" class="btn btn-green" id="loginBtn">🔑 Войти</button>
             </form>
             <div class="demo">
                 <p><strong>📌 Демо-аккаунты:</strong></p>
                 <p>👑 <span class="super">Суперпользователь</span>: super@mail.ru / 123456</p>
-                <p>👑 Админ: admin@mail.ru / 123456</p>
-                <p>👤 Пользователь: user@mail.ru / 123456</p>
-                <p>📦 ПВЗ: pvz@mail.ru / 123456</p>
+                <p>👑 <span class="admin">Администратор</span>: admin@mail.ru / 123456</p>
+                <p>👤 <span class="user">Пользователь</span>: user@mail.ru / 123456</p>
+                <p>📦 <span class="pvz">Сотрудник ПВЗ</span>: pvz@mail.ru / 123456</p>
             </div>
         </div>
 
         <!-- ===== РЕГИСТРАЦИЯ ===== -->
         <div class="form" id="registerForm">
             <h2>📝 Создать аккаунт</h2>
-            <form onsubmit="handleRegister(event)">
+            <form id="registerFormSubmit">
                 <div class="form-group">
                     <label>👤 Имя</label>
                     <input type="text" id="registerName" placeholder="Иван Петров" required>
@@ -138,22 +150,30 @@
         }
 
         // =============================================
-        // ВХОД
+        // ВХОД (ИСПРАВЛЕНО!)
         // =============================================
-        function handleLogin(e) {
+        document.getElementById('loginFormSubmit').addEventListener('submit', function(e) {
             e.preventDefault();
+
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
-            
+            const btn = document.getElementById('loginBtn');
+
+            btn.innerHTML = '⏳ Вход...';
+            btn.disabled = true;
+
+            // Ищем пользователя
             const user = users.find(u => u.email === email && u.password === password);
-            
+
             if (user) {
                 localStorage.setItem('currentUser', JSON.stringify(user));
                 localStorage.setItem('products', JSON.stringify(products));
                 showNotification('✅ Добро пожаловать, ' + user.name + '!', 'success');
                 
+                btn.innerHTML = '🔑 Войти';
+                btn.disabled = false;
+
                 setTimeout(() => {
-                    // Перенаправление в зависимости от роли
                     if (user.role === 'super') {
                         window.location.href = '/market/super/dashboard.html';
                     } else if (user.role === 'admin') {
@@ -166,13 +186,15 @@
                 }, 500);
             } else {
                 showNotification('❌ Неверный email или пароль!', 'error');
+                btn.innerHTML = '🔑 Войти';
+                btn.disabled = false;
             }
-        }
+        });
 
         // =============================================
         // РЕГИСТРАЦИЯ
         // =============================================
-        function handleRegister(e) {
+        document.getElementById('registerFormSubmit').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const name = document.getElementById('registerName').value.trim();
@@ -209,7 +231,7 @@
             document.getElementById('loginPassword').value = '';
             document.getElementById('registerName').value = '';
             document.getElementById('registerPassword').value = '';
-        }
+        });
 
         // =============================================
         // ПРОВЕРКА АВТОРИЗАЦИИ
@@ -241,7 +263,6 @@
             console.log('👥 Пользователей:', users.length);
             console.log('📦 Товаров:', products.length);
             console.log('📋 Заказов:', orders.length);
-            console.log('👑 Суперпользователь: super@mail.ru / 123456');
         });
 
         // =============================================
