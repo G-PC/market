@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Супер-панель</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .super-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .super-stats .stat-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .super-stats .stat-item .number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .super-stats .stat-item .label {
+            color: #666;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+        .quick-links {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .quick-links a {
+            text-decoration: none;
+        }
+        .quick-links .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">🛍️ Маркет</div>
+        <nav>
+            <a href="dashboard.html" class="active">👑 Супер-панель</a>
+            <button onclick="logout()" class="btn btn-red">🚪 Выйти</button>
+        </nav>
+    </header>
+    <main>
+        <h1>👑 Суперпользователь: <span id="superName"></span></h1>
+        
+        <div class="super-stats" id="statsContainer">
+            <!-- Рендерится через JS -->
+        </div>
+        
+        <div class="card">
+            <h2>⚡ Быстрые действия</h2>
+            <div class="quick-links">
+                <a href="../admin/products.html" class="btn btn-green">📦 Управление товарами</a>
+                <a href="../admin/orders.html" class="btn btn-blue">📋 Управление заказами</a>
+                <a href="../pvz/dashboard.html" class="btn btn-orange" style="background:#FF9800;color:white;">📦 ПВЗ-панель</a>
+                <a href="../user/profile.html" class="btn btn-purple" style="background:#9C27B0;color:white;">👤 Профиль</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>📋 Последние заказы</h2>
+            <div id="recentOrders"></div>
+        </div>
+    </main>
+    <script src="../js/app.js"></script>
+    <script>
+        function loadSuperDashboard() {
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            document.getElementById('superName').textContent = user.name;
+            
+            const stats = getSuperDashboard();
+            
+            document.getElementById('statsContainer').innerHTML = `
+                <div class="stat-item">
+                    <div class="number">${stats.stats.totalUsers}</div>
+                    <div class="label">👥 Пользователей</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number">${stats.stats.totalProducts}</div>
+                    <div class="label">📦 Товаров</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number">${stats.stats.totalOrders}</div>
+                    <div class="label">📋 Заказов</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number">${stats.stats.totalRevenue.toLocaleString()} ₽</div>
+                    <div class="label">💰 Выручка</div>
+                </div>
+            `;
+            
+            const recent = [...orders].sort((a, b) => b.id - a.id).slice(0, 10);
+            const container = document.getElementById('recentOrders');
+            if (recent.length === 0) {
+                container.innerHTML = '<p style="color:#666;">Нет заказов</p>';
+                return;
+            }
+            const statusLabels = { 'new': 'Новый', 'processing': 'В обработке', 'delivery': 'Доставка', 'pvz': 'В ПВЗ', 'completed': 'Выдан' };
+            container.innerHTML = recent.map(o => {
+                const buyer = users.find(u => u.id === o.userId);
+                return `<div style="padding:8px 0;border-bottom:1px solid #eee;display:flex;justify-content:space-between;flex-wrap:wrap;gap:5px;">
+                    <span>#${o.id} - ${buyer ? buyer.name : 'Неизвестно'}</span>
+                    <span>${o.total.toLocaleString()} ₽</span>
+                    <span class="status status-${o.status}">${statusLabels[o.status] || o.status}</span>
+                </div>`;
+            }).join('');
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/market/';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            if (!user || user.role !== 'super') {
+                window.location.href = '/market/';
+                return;
+            }
+            loadSuperDashboard();
+        });
+    </script>
+</body>
+</html>
