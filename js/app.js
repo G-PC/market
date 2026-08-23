@@ -1,5 +1,5 @@
 // ============================================
-// ПОЛЬЗОВАТЕЛИ
+// ПОЛЬЗОВАТЕЛИ (С СУПЕРПОЛЬЗОВАТЕЛЕМ!)
 // ============================================
 let users = [
     { id: 1, email: 'admin@mail.ru', password: '123456', role: 'admin', name: 'Администратор' },
@@ -176,7 +176,7 @@ function getAllOrders() {
 }
 
 // ============================================
-// ===== 1. ВЫДАЧА ЗАКАЗА =====
+// ВЫДАЧА ЗАКАЗА
 // ============================================
 function issueOrder(orderId) {
     const order = orders.find(o => o.id === orderId);
@@ -202,7 +202,7 @@ function issueOrder(orderId) {
 }
 
 // ============================================
-// КОРЗИНА (ТОВАР НЕ ИСЧЕЗАЕТ ПОСЛЕ ЗАКАЗА)
+// КОРЗИНА
 // ============================================
 function getCart() {
     const cart = localStorage.getItem('cart');
@@ -257,7 +257,7 @@ function updateCartBadge() {
 }
 
 // ============================================
-// ===== 2. ПОИСК ПО КАТАЛОГУ =====
+// ПОИСК
 // ============================================
 function searchProducts(query) {
     if (!query || query.trim() === '') {
@@ -271,14 +271,13 @@ function searchProducts(query) {
 }
 
 // ============================================
-// ===== 3. СУПЕРПОЛЬЗОВАТЕЛЬ =====
+// СУПЕРПОЛЬЗОВАТЕЛЬ
 // ============================================
 function isSuperUser(user) {
     return user && user.role === 'super';
 }
 
 function getSuperDashboard() {
-    // Суперпользователь видит всё
     return {
         users: users,
         products: products,
@@ -375,7 +374,7 @@ window.getUserOrders = getUserOrders;
 window.getPVZOrders = getPVZOrders;
 window.updateOrderStatus = updateOrderStatus;
 window.getAllOrders = getAllOrders;
-window.issueOrder = issueOrder;  // НОВОЕ!
+window.issueOrder = issueOrder;
 
 window.getCart = getCart;
 window.saveCart = saveCart;
@@ -386,9 +385,9 @@ window.getCartTotal = getCartTotal;
 window.getCartCount = getCartCount;
 window.updateCartBadge = updateCartBadge;
 
-window.searchProducts = searchProducts;  // НОВОЕ!
-window.isSuperUser = isSuperUser;  // НОВОЕ!
-window.getSuperDashboard = getSuperDashboard;  // НОВОЕ!
+window.searchProducts = searchProducts;
+window.isSuperUser = isSuperUser;
+window.getSuperDashboard = getSuperDashboard;
 
 window.showNotification = showNotification;
 
