@@ -23,6 +23,9 @@
     </main>
     <script src="js/app.js"></script>
     <script>
+        // =============================================
+        // ОТОБРАЖЕНИЕ КАТАЛОГА
+        // =============================================
         function renderCatalog() {
             const grid = document.getElementById('catalogGrid');
             grid.innerHTML = products.map(p => `
@@ -36,23 +39,45 @@
             updateCartBadge();
         }
 
+        // =============================================
+        // ДОБАВЛЕНИЕ В КОРЗИНУ (ИСПРАВЛЕНО!)
+        // =============================================
         function addToCart(productId) {
             const product = getProduct(productId);
-            if (!product) { showNotification('Товар не найден', 'error'); return; }
-            const qty = prompt('Введите количество:', '1');
-            if (!qty) return;
-            const quantity = Number(qty);
-            if (quantity <= 0) { showNotification('Некорректное количество', 'error'); return; }
+            if (!product) {
+                showNotification('Товар не найден', 'error');
+                return;
+            }
+            
+            // Запрашиваем количество ТОЛЬКО ОДИН РАЗ
+            const input = prompt('Введите количество:', '1');
+            if (input === null) return; // Отмена
+            
+            const quantity = Number(input);
+            if (isNaN(quantity) || quantity <= 0) {
+                showNotification('Некорректное количество', 'error');
+                return;
+            }
+            
+            // Добавляем в корзину
             addToCart(productId, quantity);
             showNotification(`${product.name} добавлен в корзину (${quantity} шт.)`, 'success');
+            
+            // Обновляем бейдж корзины (НЕ ПЕРЕРИСОВЫВАЕМ ВЕСЬ КАТАЛОГ!)
             updateCartBadge();
         }
 
+        // =============================================
+        // ВЫХОД
+        // =============================================
         function logout() {
             localStorage.removeItem('currentUser');
             window.location.href = '/market/';
         }
 
+        // =============================================
+        // ИНИЦИАЛИЗАЦИЯ
+        // =============================================
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
             const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
