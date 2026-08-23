@@ -4,9 +4,11 @@
 let users = [
     { id: 1, email: 'admin@mail.ru', password: '123456', role: 'admin', name: 'Администратор' },
     { id: 2, email: 'user@mail.ru', password: '123456', role: 'user', name: 'Иван Петров' },
-    { id: 3, email: 'pvz@mail.ru', password: '123456', role: 'pvz', name: 'ПВЗ №1' }
+    { id: 3, email: 'pvz@mail.ru', password: '123456', role: 'pvz', name: 'ПВЗ №1' },
+    // ===== СУПЕРПОЛЬЗОВАТЕЛЬ =====
+    { id: 4, email: 'super@mail.ru', password: '123456', role: 'super', name: 'Суперпользователь' }
 ];
-let nextUserId = 4;
+let nextUserId = 5;
 
 // ============================================
 // ТОВАРЫ
@@ -88,7 +90,6 @@ function saveAll() {
     saveOrders();
 }
 
-// Загружаем данные при старте
 loadData();
 
 // ============================================
@@ -175,7 +176,33 @@ function getAllOrders() {
 }
 
 // ============================================
-// КОРЗИНА
+// ===== 1. ВЫДАЧА ЗАКАЗА =====
+// ============================================
+function issueOrder(orderId) {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) {
+        showNotification('Заказ не найден', 'error');
+        return false;
+    }
+    
+    if (order.status === 'completed') {
+        showNotification('Заказ уже выдан', 'warning');
+        return false;
+    }
+    
+    if (order.status !== 'pvz') {
+        showNotification('Заказ ещё не готов к выдаче', 'warning');
+        return false;
+    }
+    
+    order.status = 'completed';
+    saveOrders();
+    showNotification(`✅ Заказ #${orderId} выдан!`, 'success');
+    return true;
+}
+
+// ============================================
+// КОРЗИНА (ТОВАР НЕ ИСЧЕЗАЕТ ПОСЛЕ ЗАКАЗА)
 // ============================================
 function getCart() {
     const cart = localStorage.getItem('cart');
@@ -196,7 +223,6 @@ function addToCart(productId, quantity) {
         cart.push({ id: productId, quantity: quantity });
     }
     saveCart(cart);
-    // НЕ ВЫЗЫВАЕМ renderCatalog()!
 }
 
 function removeFromCart(productId) {
@@ -228,6 +254,42 @@ function updateCartBadge() {
         el.textContent = count;
         el.style.display = count > 0 ? 'inline' : 'none';
     });
+}
+
+// ============================================
+// ===== 2. ПОИСК ПО КАТАЛОГУ =====
+// ============================================
+function searchProducts(query) {
+    if (!query || query.trim() === '') {
+        return getProducts();
+    }
+    const lowerQuery = query.toLowerCase().trim();
+    return products.filter(p => 
+        p.name.toLowerCase().includes(lowerQuery) || 
+        (p.description && p.description.toLowerCase().includes(lowerQuery))
+    );
+}
+
+// ============================================
+// ===== 3. СУПЕРПОЛЬЗОВАТЕЛЬ =====
+// ============================================
+function isSuperUser(user) {
+    return user && user.role === 'super';
+}
+
+function getSuperDashboard() {
+    // Суперпользователь видит всё
+    return {
+        users: users,
+        products: products,
+        orders: orders,
+        stats: {
+            totalUsers: users.length,
+            totalProducts: products.length,
+            totalOrders: orders.length,
+            totalRevenue: orders.reduce((sum, o) => sum + o.total, 0)
+        }
+    };
 }
 
 // ============================================
@@ -267,7 +329,6 @@ function showNotification(message, type = 'info') {
     `;
     document.body.appendChild(div);
     
-    // Добавляем стиль анимации, если ещё нет
     if (!document.getElementById('notification-style')) {
         const style = document.createElement('style');
         style.id = 'notification-style';
@@ -288,7 +349,7 @@ function showNotification(message, type = 'info') {
 }
 
 // ============================================
-// ЭКСПОРТ В ГЛОБАЛЬНУЮ ОБЛАСТЬ
+// ЭКСПОРТ
 // ============================================
 window.users = users;
 window.products = products;
@@ -314,6 +375,7 @@ window.getUserOrders = getUserOrders;
 window.getPVZOrders = getPVZOrders;
 window.updateOrderStatus = updateOrderStatus;
 window.getAllOrders = getAllOrders;
+window.issueOrder = issueOrder;  // НОВОЕ!
 
 window.getCart = getCart;
 window.saveCart = saveCart;
@@ -324,6 +386,10 @@ window.getCartTotal = getCartTotal;
 window.getCartCount = getCartCount;
 window.updateCartBadge = updateCartBadge;
 
+window.searchProducts = searchProducts;  // НОВОЕ!
+window.isSuperUser = isSuperUser;  // НОВОЕ!
+window.getSuperDashboard = getSuperDashboard;  // НОВОЕ!
+
 window.showNotification = showNotification;
 
 console.log('🛍️ Маркет загружен!');
@@ -331,3 +397,4 @@ console.log('👥 Пользователей:', users.length);
 console.log('📦 Товаров:', products.length);
 console.log('📋 Заказов:', orders.length);
 console.log('🛒 Товаров в корзине:', getCartCount());
+console.log('👑 Суперпользователь: super@mail.ru / 123456');
