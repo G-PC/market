@@ -34,13 +34,28 @@ let nextOrderId = 3;
 // ============================================
 function loadData() {
     const savedUsers = localStorage.getItem('users');
-    if (savedUsers) { try { const p = JSON.parse(savedUsers); if (p && p.length > 0) users = p; } catch(e) {} }
+    if (savedUsers) { 
+        try { 
+            const p = JSON.parse(savedUsers); 
+            if (p && p.length > 0) users = p; 
+        } catch(e) {} 
+    }
     
     const savedProducts = localStorage.getItem('products');
-    if (savedProducts) { try { const p = JSON.parse(savedProducts); if (p && p.length > 0) products = p; } catch(e) {} }
+    if (savedProducts) { 
+        try { 
+            const p = JSON.parse(savedProducts); 
+            if (p && p.length > 0) products = p; 
+        } catch(e) {} 
+    }
     
     const savedOrders = localStorage.getItem('orders');
-    if (savedOrders) { try { const p = JSON.parse(savedOrders); if (p && p.length > 0) orders = p; } catch(e) {} }
+    if (savedOrders) { 
+        try { 
+            const p = JSON.parse(savedOrders); 
+            if (p && p.length > 0) orders = p; 
+        } catch(e) {} 
+    }
     
     const savedNextUserId = localStorage.getItem('nextUserId');
     if (savedNextUserId) nextUserId = Number(savedNextUserId);
@@ -73,6 +88,7 @@ function saveAll() {
     saveOrders();
 }
 
+// Загружаем данные при старте
 loadData();
 
 // ============================================
@@ -82,8 +98,17 @@ function getProduct(id) {
     return products.find(p => p.id === id);
 }
 
+function getProducts() {
+    return products;
+}
+
 function addProduct(name, price, description) {
-    const product = { id: nextProductId++, name, price: Number(price), description: description || '' };
+    const product = { 
+        id: nextProductId++, 
+        name, 
+        price: Number(price), 
+        description: description || '' 
+    };
     products.push(product);
     saveProducts();
     return product;
@@ -150,7 +175,7 @@ function getAllOrders() {
 }
 
 // ============================================
-// КОРЗИНА (ИСПРАВЛЕНО!)
+// КОРЗИНА
 // ============================================
 function getCart() {
     const cart = localStorage.getItem('cart');
@@ -184,9 +209,21 @@ function clearCart() {
     saveCart([]);
 }
 
-function updateCartBadge() {
+function getCartTotal() {
     const cart = getCart();
-    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    return cart.reduce((sum, item) => {
+        const product = getProduct(item.id);
+        return sum + (product ? product.price * item.quantity : 0);
+    }, 0);
+}
+
+function getCartCount() {
+    const cart = getCart();
+    return cart.reduce((sum, item) => sum + item.quantity, 0);
+}
+
+function updateCartBadge() {
+    const count = getCartCount();
     document.querySelectorAll('#cartCount').forEach(el => {
         el.textContent = count;
         el.style.display = count > 0 ? 'inline' : 'none';
@@ -200,7 +237,13 @@ function showNotification(message, type = 'info') {
     const old = document.querySelector('.notification');
     if (old) old.remove();
     
-    const colors = { success: '#4CAF50', error: '#f44336', info: '#2196F3' };
+    const colors = { 
+        success: '#4CAF50', 
+        error: '#f44336', 
+        info: '#2196F3',
+        warning: '#FF9800'
+    };
+    
     const div = document.createElement('div');
     div.className = `notification ${type}`;
     div.textContent = message;
@@ -253,29 +296,38 @@ window.orders = orders;
 window.nextUserId = nextUserId;
 window.nextProductId = nextProductId;
 window.nextOrderId = nextOrderId;
+
 window.loadData = loadData;
 window.saveUsers = saveUsers;
 window.saveProducts = saveProducts;
 window.saveOrders = saveOrders;
 window.saveAll = saveAll;
+
 window.getProduct = getProduct;
+window.getProducts = getProducts;
 window.addProduct = addProduct;
 window.updateProduct = updateProduct;
 window.deleteProduct = deleteProduct;
+
 window.createOrder = createOrder;
 window.getUserOrders = getUserOrders;
 window.getPVZOrders = getPVZOrders;
 window.updateOrderStatus = updateOrderStatus;
 window.getAllOrders = getAllOrders;
+
 window.getCart = getCart;
 window.saveCart = saveCart;
 window.addToCart = addToCart;
 window.removeFromCart = removeFromCart;
 window.clearCart = clearCart;
+window.getCartTotal = getCartTotal;
+window.getCartCount = getCartCount;
 window.updateCartBadge = updateCartBadge;
+
 window.showNotification = showNotification;
 
 console.log('🛍️ Маркет загружен!');
 console.log('👥 Пользователей:', users.length);
 console.log('📦 Товаров:', products.length);
 console.log('📋 Заказов:', orders.length);
+console.log('🛒 Товаров в корзине:', getCartCount());
