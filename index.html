@@ -46,6 +46,19 @@
             margin-top: 8px;
             width: 100%;
         }
+        .super-badge {
+            display: inline-block;
+            background: #9C27B0;
+            color: white;
+            font-size: 11px;
+            padding: 2px 10px;
+            border-radius: 12px;
+            margin-left: 5px;
+        }
+        .demo .super {
+            color: #9C27B0;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -58,7 +71,7 @@
             <button class="tab" onclick="switchTab('register')">📝 Регистрация</button>
         </div>
 
-        <!-- ВХОД -->
+        <!-- ===== ВХОД ===== -->
         <div class="form active" id="loginForm">
             <h2>Вход в систему</h2>
             <form onsubmit="handleLogin(event)">
@@ -74,13 +87,14 @@
             </form>
             <div class="demo">
                 <p><strong>📌 Демо-аккаунты:</strong></p>
+                <p>👑 <span class="super">Суперпользователь</span>: super@mail.ru / 123456</p>
                 <p>👑 Админ: admin@mail.ru / 123456</p>
                 <p>👤 Пользователь: user@mail.ru / 123456</p>
                 <p>📦 ПВЗ: pvz@mail.ru / 123456</p>
             </div>
         </div>
 
-        <!-- РЕГИСТРАЦИЯ -->
+        <!-- ===== РЕГИСТРАЦИЯ ===== -->
         <div class="form" id="registerForm">
             <h2>📝 Создать аккаунт</h2>
             <form onsubmit="handleRegister(event)">
@@ -113,6 +127,9 @@
 
     <script src="js/app.js"></script>
     <script>
+        // =============================================
+        // ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
+        // =============================================
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
@@ -120,27 +137,44 @@
             document.getElementById(tab === 'login' ? 'loginForm' : 'registerForm').classList.add('active');
         }
 
+        // =============================================
+        // ВХОД
+        // =============================================
         function handleLogin(e) {
             e.preventDefault();
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
+            
             const user = users.find(u => u.email === email && u.password === password);
+            
             if (user) {
                 localStorage.setItem('currentUser', JSON.stringify(user));
                 localStorage.setItem('products', JSON.stringify(products));
                 showNotification('✅ Добро пожаловать, ' + user.name + '!', 'success');
+                
                 setTimeout(() => {
-                    window.location.href = user.role === 'admin' ? '/market/admin/dashboard.html' :
-                                          user.role === 'pvz' ? '/market/pvz/dashboard.html' :
-                                          '/market/user/profile.html';
+                    // Перенаправление в зависимости от роли
+                    if (user.role === 'super') {
+                        window.location.href = '/market/super/dashboard.html';
+                    } else if (user.role === 'admin') {
+                        window.location.href = '/market/admin/dashboard.html';
+                    } else if (user.role === 'pvz') {
+                        window.location.href = '/market/pvz/dashboard.html';
+                    } else {
+                        window.location.href = '/market/user/profile.html';
+                    }
                 }, 500);
             } else {
                 showNotification('❌ Неверный email или пароль!', 'error');
             }
         }
 
+        // =============================================
+        // РЕГИСТРАЦИЯ
+        // =============================================
         function handleRegister(e) {
             e.preventDefault();
+            
             const name = document.getElementById('registerName').value.trim();
             const email = document.getElementById('registerEmail').value.trim();
             const password = document.getElementById('registerPassword').value;
@@ -159,17 +193,30 @@
                 return;
             }
 
-            const newUser = { id: nextUserId++, name, email, password, role };
+            const newUser = { 
+                id: nextUserId++, 
+                name, 
+                email, 
+                password, 
+                role: role || 'user' 
+            };
             users.push(newUser);
             saveUsers();
+            
             showNotification('✅ Аккаунт создан! Войдите.', 'success');
             switchTab('login');
             document.getElementById('loginEmail').value = email;
             document.getElementById('loginPassword').value = '';
+            document.getElementById('registerName').value = '';
+            document.getElementById('registerPassword').value = '';
         }
 
+        // =============================================
+        // ПРОВЕРКА АВТОРИЗАЦИИ
+        // =============================================
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
+            
             const saved = localStorage.getItem('currentUser');
             if (saved) {
                 try {
@@ -179,18 +226,44 @@
                         const panel = document.createElement('div');
                         panel.className = 'quick-login';
                         panel.innerHTML = `
-                            <p>👋 Вы уже авторизованы как <strong>${exists.name}</strong></p>
-                            <button onclick="window.location.href='/market/${exists.role}/dashboard.html'" class="btn btn-blue">Продолжить</button>
-                            <button onclick="localStorage.removeItem('currentUser');location.reload();" class="btn btn-red">Выйти</button>
+                            <p>👋 Вы уже авторизованы как <strong>${exists.name}</strong>
+                            ${exists.role === 'super' ? '<span class="super-badge">👑 SUPER</span>' : ''}
+                            </p>
+                            <button onclick="goToDashboard()" class="btn btn-blue">Продолжить</button>
+                            <button onclick="logout()" class="btn btn-red">Выйти</button>
                         `;
                         document.querySelector('.form').after(panel);
                     }
                 } catch (e) {}
             }
+
             console.log('🛍️ Маркет загружен!');
             console.log('👥 Пользователей:', users.length);
             console.log('📦 Товаров:', products.length);
+            console.log('📋 Заказов:', orders.length);
+            console.log('👑 Суперпользователь: super@mail.ru / 123456');
         });
+
+        // =============================================
+        // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+        // =============================================
+        function goToDashboard() {
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            if (user.role === 'super') {
+                window.location.href = '/market/super/dashboard.html';
+            } else if (user.role === 'admin') {
+                window.location.href = '/market/admin/dashboard.html';
+            } else if (user.role === 'pvz') {
+                window.location.href = '/market/pvz/dashboard.html';
+            } else {
+                window.location.href = '/market/user/profile.html';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            location.reload();
+        }
     </script>
 </body>
 </html>
