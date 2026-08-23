@@ -150,7 +150,7 @@ function getAllOrders() {
 }
 
 // ============================================
-// КОРЗИНА
+// КОРЗИНА (ИСПРАВЛЕНО!)
 // ============================================
 function getCart() {
     const cart = localStorage.getItem('cart');
@@ -170,6 +170,13 @@ function addToCart(productId, quantity) {
     } else {
         cart.push({ id: productId, quantity: quantity });
     }
+    saveCart(cart);
+    // НЕ ВЫЗЫВАЕМ renderCatalog()!
+}
+
+function removeFromCart(productId) {
+    let cart = getCart();
+    cart = cart.filter(item => item.id !== productId);
     saveCart(cart);
 }
 
@@ -197,7 +204,38 @@ function showNotification(message, type = 'info') {
     const div = document.createElement('div');
     div.className = `notification ${type}`;
     div.textContent = message;
+    div.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${colors[type] || '#333'};
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 9999;
+        animation: slideUp 0.3s ease;
+        max-width: 90%;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    `;
     document.body.appendChild(div);
+    
+    // Добавляем стиль анимации, если ещё нет
+    if (!document.getElementById('notification-style')) {
+        const style = document.createElement('style');
+        style.id = 'notification-style';
+        style.textContent = `
+            @keyframes slideUp {
+                from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+                to { opacity: 1; transform: translateX(-50%) translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
     
     setTimeout(() => {
         div.style.opacity = '0';
@@ -207,7 +245,7 @@ function showNotification(message, type = 'info') {
 }
 
 // ============================================
-// ЭКСПОРТ
+// ЭКСПОРТ В ГЛОБАЛЬНУЮ ОБЛАСТЬ
 // ============================================
 window.users = users;
 window.products = products;
@@ -232,6 +270,7 @@ window.getAllOrders = getAllOrders;
 window.getCart = getCart;
 window.saveCart = saveCart;
 window.addToCart = addToCart;
+window.removeFromCart = removeFromCart;
 window.clearCart = clearCart;
 window.updateCartBadge = updateCartBadge;
 window.showNotification = showNotification;
