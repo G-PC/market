@@ -14,7 +14,40 @@
         }
         .back-link:hover { text-decoration: underline; }
 
-        /* ===== КАСТОМНОЕ МОДАЛЬНОЕ ОКНО ===== */
+        .code-input-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .code-input-section label {
+            font-weight: 500;
+            font-size: 16px;
+        }
+        .code-input-section input {
+            flex: 1;
+            min-width: 150px;
+            padding: 10px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 20px;
+            text-align: center;
+            letter-spacing: 4px;
+            font-family: monospace;
+        }
+        .code-input-section input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        .code-input-section .btn {
+            padding: 10px 24px;
+            width: auto;
+        }
+
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -26,79 +59,27 @@
             justify-content: center;
             align-items: center;
             z-index: 10000;
-            animation: fadeIn 0.3s ease;
         }
-        .modal-overlay.active {
-            display: flex;
-        }
+        .modal-overlay.active { display: flex; }
         .modal-box {
             background: white;
             border-radius: 16px;
             padding: 30px;
             max-width: 420px;
             width: 90%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            animation: scaleIn 0.3s ease;
             text-align: center;
+            animation: scaleIn 0.3s ease;
         }
-        .modal-box .icon {
-            font-size: 48px;
-            margin-bottom: 10px;
-        }
-        .modal-box h3 {
-            font-size: 20px;
-            margin-bottom: 8px;
-            color: #333;
-        }
-        .modal-box p {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-        .modal-box .order-id {
-            font-weight: bold;
-            color: #4CAF50;
-            font-size: 18px;
-        }
-        .modal-actions {
-            display: flex;
-            gap: 10px;
-        }
-        .modal-actions .btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: 0.3s;
-            font-weight: 500;
-            color: white;
-        }
-        .modal-actions .btn-cancel {
-            background: #e0e0e0;
-            color: #333;
-        }
-        .modal-actions .btn-cancel:hover {
-            background: #d0d0d0;
-        }
-        .modal-actions .btn-confirm {
-            background: #4CAF50;
-        }
-        .modal-actions .btn-confirm:hover {
-            background: #388E3C;
-        }
-        .modal-actions .btn-danger {
-            background: #f44336;
-        }
-        .modal-actions .btn-danger:hover {
-            background: #d32f2f;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
+        .modal-box .icon { font-size: 48px; margin-bottom: 10px; }
+        .modal-box h3 { font-size: 20px; margin-bottom: 8px; color: #333; }
+        .modal-box p { color: #666; font-size: 14px; margin-bottom: 20px; }
+        .modal-actions { display: flex; gap: 10px; }
+        .modal-actions .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: 500; color: white; }
+        .modal-actions .btn-cancel { background: #e0e0e0; color: #333; }
+        .modal-actions .btn-confirm { background: #4CAF50; }
+        .modal-actions .btn-confirm:hover { background: #388E3C; }
+        .modal-actions .btn-danger { background: #f44336; }
+        .modal-actions .btn-danger:hover { background: #d32f2f; }
         @keyframes scaleIn {
             from { transform: scale(0.9); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
@@ -117,6 +98,13 @@
     <main>
         <a href="../super/dashboard.html" class="back-link">← Назад в супер-панель</a>
         <h1>📦 ПВЗ: <span id="pvzName"></span></h1>
+        
+        <!-- ===== ВВОД КОДА ДЛЯ ВЫДАЧИ ===== -->
+        <div class="code-input-section">
+            <label>🔑 Выдача по коду:</label>
+            <input type="text" id="orderCodeInput" maxlength="4" placeholder="Введите 4-значный код" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)">
+            <button class="btn btn-green" onclick="issueByCode()">📦 Выдать заказ</button>
+        </div>
         
         <div class="stats-grid">
             <div class="stat-item">
@@ -145,6 +133,19 @@
             <div class="modal-actions">
                 <button class="btn btn-cancel" onclick="closeConfirmModal()">Отмена</button>
                 <button class="btn btn-danger" id="modalConfirmBtn" onclick="executeConfirm()">✅ Подтвердить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== МОДАЛЬНОЕ ОКНО ДЛЯ ВЫХОДА ===== -->
+    <div class="modal-overlay" id="logoutModal">
+        <div class="modal-box">
+            <div class="icon">🚪</div>
+            <h3>Выход из аккаунта</h3>
+            <p>Вы уверены, что хотите выйти?</p>
+            <div class="modal-actions">
+                <button class="btn btn-cancel" onclick="document.getElementById('logoutModal').style.display='none'">Отмена</button>
+                <button class="btn btn-danger" onclick="logout()">Выйти</button>
             </div>
         </div>
     </div>
@@ -180,31 +181,37 @@
         }
 
         // =============================================
-        // ВЫХОД С ПОДТВЕРЖДЕНИЕМ
+        // ВЫХОД
         // =============================================
         function showLogoutModal() {
-            showConfirmModal(
-                '🚪 Выход из аккаунта',
-                'Вы уверены, что хотите выйти?',
-                '🚪',
-                function() {
-                    localStorage.removeItem('currentUser');
-                    window.location.href = '/market/';
-                }
-            );
+            document.getElementById('logoutModal').style.display = 'flex';
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/market/';
         }
 
         // =============================================
-        // ВЫДАЧА ЗАКАЗА С ПОДТВЕРЖДЕНИЕМ
+        // ВЫДАЧА ЗАКАЗА ПО КОДУ
         // =============================================
-        function confirmIssueOrder(orderId) {
+        function issueByCode() {
+            const code = document.getElementById('orderCodeInput').value.trim();
+            if (code.length !== 4) {
+                showNotification('❌ Введите 4-значный код!', 'error');
+                return;
+            }
+            
             showConfirmModal(
                 '📦 Выдача заказа',
-                'Выдать заказ #' + orderId + '?',
+                'Выдать заказ по коду ' + code + '?',
                 '📦',
                 function() {
-                    const result = window.issueOrder(orderId);
-                    if (result) renderPVZOrders();
+                    const result = issueOrderByCode(code);
+                    if (result) {
+                        document.getElementById('orderCodeInput').value = '';
+                        renderPVZOrders();
+                    }
                 }
             );
         }
@@ -253,6 +260,11 @@
                     actions = `<span style="color:#4CAF50;font-weight:bold;margin-top:10px;display:block;">✅ Заказ выдан</span>`;
                 }
                 
+                let codeHtml = '';
+                if (o.status === 'pvz' || o.status === 'completed') {
+                    codeHtml = `<div style="margin-top:6px;"><strong>Код:</strong> <span style="font-family:monospace;font-size:18px;font-weight:bold;color:#4CAF50;letter-spacing:2px;">${o.code}</span></div>`;
+                }
+                
                 return `
                     <div class="order-card">
                         <div class="header">
@@ -263,10 +275,23 @@
                         <div><strong>Покупатель:</strong> ${buyer ? buyer.name : 'Неизвестно'}</div>
                         <div><strong>Товары:</strong> ${productsList}</div>
                         <div class="total">💰 ${o.total.toLocaleString()} ₽</div>
+                        ${codeHtml}
                         ${actions}
                     </div>
                 `;
             }).join('');
+        }
+
+        function confirmIssueOrder(orderId) {
+            showConfirmModal(
+                '📦 Выдача заказа',
+                'Выдать заказ #' + orderId + '?',
+                '📦',
+                function() {
+                    const result = window.issueOrder(orderId);
+                    if (result) renderPVZOrders();
+                }
+            );
         }
 
         function markReady(orderId) {
