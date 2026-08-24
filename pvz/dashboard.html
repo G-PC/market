@@ -30,23 +30,40 @@
         }
         .code-input-section input {
             flex: 1;
-            min-width: 150px;
-            padding: 10px 14px;
+            min-width: 180px;
+            padding: 12px 16px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
-            font-size: 20px;
+            font-size: 24px;
             text-align: center;
-            letter-spacing: 4px;
-            font-family: monospace;
+            letter-spacing: 6px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
         }
         .code-input-section input:focus {
             outline: none;
             border-color: #4CAF50;
         }
         .code-input-section .btn {
-            padding: 10px 24px;
+            padding: 12px 28px;
             width: auto;
+            font-size: 16px;
         }
+        .code-input-section .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .code-status {
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 6px;
+            min-width: 150px;
+            text-align: center;
+        }
+        .code-status.valid { background: #e8f5e9; color: #2e7d32; }
+        .code-status.invalid { background: #ffebee; color: #c62828; }
+        .code-status.empty { background: #f5f5f5; color: #999; }
 
         .modal-overlay {
             position: fixed;
@@ -73,6 +90,15 @@
         .modal-box .icon { font-size: 48px; margin-bottom: 10px; }
         .modal-box h3 { font-size: 20px; margin-bottom: 8px; color: #333; }
         .modal-box p { color: #666; font-size: 14px; margin-bottom: 20px; }
+        .modal-box .order-info {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0 20px;
+            text-align: left;
+        }
+        .modal-box .order-info .label { color: #666; font-size: 13px; }
+        .modal-box .order-info .value { font-weight: 500; font-size: 16px; }
         .modal-actions { display: flex; gap: 10px; }
         .modal-actions .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: 500; color: white; }
         .modal-actions .btn-cancel { background: #e0e0e0; color: #333; }
@@ -83,6 +109,14 @@
         @keyframes scaleIn {
             from { transform: scale(0.9); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
+        }
+        
+        .order-code-display {
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            color: #4CAF50;
+            letter-spacing: 3px;
         }
     </style>
 </head>
@@ -101,9 +135,12 @@
         
         <!-- ===== ВВОД КОДА ДЛЯ ВЫДАЧИ ===== -->
         <div class="code-input-section">
-            <label>🔑 Выдача по коду:</label>
-            <input type="text" id="orderCodeInput" maxlength="4" placeholder="Введите 4-значный код" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)">
-            <button class="btn btn-green" onclick="issueByCode()">📦 Выдать заказ</button>
+            <label>🔑 Код получения:</label>
+            <input type="text" id="orderCodeInput" maxlength="4" 
+                   placeholder="Введите 4 цифры" 
+                   oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4); checkCode();">
+            <button class="btn btn-green" id="issueBtn" onclick="issueByCode()" disabled>📦 Выдать заказ</button>
+            <span id="codeStatus" class="code-status empty">Введите код</span>
         </div>
         
         <div class="stats-grid">
@@ -127,12 +164,13 @@
     <!-- ===== МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ ===== -->
     <div class="modal-overlay" id="confirmModal">
         <div class="modal-box">
-            <div class="icon" id="modalIcon">⚠️</div>
-            <h3 id="modalTitle">Подтверждение</h3>
-            <p id="modalMessage">Вы уверены?</p>
+            <div class="icon" id="modalIcon">📦</div>
+            <h3 id="modalTitle">Подтверждение выдачи</h3>
+            <div id="modalOrderInfo" class="order-info"></div>
+            <p id="modalMessage">Выдать заказ?</p>
             <div class="modal-actions">
                 <button class="btn btn-cancel" onclick="closeConfirmModal()">Отмена</button>
-                <button class="btn btn-danger" id="modalConfirmBtn" onclick="executeConfirm()">✅ Подтвердить</button>
+                <button class="btn btn-confirm" id="modalConfirmBtn" onclick="executeConfirm()">✅ Выдать</button>
             </div>
         </div>
     </div>
@@ -153,17 +191,31 @@
     <script src="../js/app.js"></script>
     <script>
         // =============================================
-        // ПЕРЕМЕННЫЕ ДЛЯ МОДАЛЬНОГО ОКНА
+        // ПЕРЕМЕННЫЕ
         // =============================================
         let confirmCallback = null;
+        let foundOrder = null;
 
         // =============================================
         // КАСТОМНОЕ МОДАЛЬНОЕ ОКНО
         // =============================================
-        function showConfirmModal(title, message, icon = '⚠️', callback) {
+        function showConfirmModal(title, message, icon = '⚠️', orderData = null, callback) {
             document.getElementById('modalTitle').textContent = title;
-            document.getElementById('modalMessage').textContent = message;
             document.getElementById('modalIcon').textContent = icon;
+            document.getElementById('modalMessage').textContent = message;
+            
+            const infoContainer = document.getElementById('modalOrderInfo');
+            if (orderData) {
+                infoContainer.innerHTML = `
+                    <div><span class="label">Заказ #${orderData.id}</span></div>
+                    <div><span class="label">Покупатель:</span> <span class="value">${orderData.buyer}</span></div>
+                    <div><span class="label">Сумма:</span> <span class="value">${orderData.total.toLocaleString()} ₽</span></div>
+                    <div><span class="label">Код:</span> <span class="value order-code-display">${orderData.code}</span></div>
+                `;
+            } else {
+                infoContainer.innerHTML = '';
+            }
+            
             confirmCallback = callback;
             document.getElementById('confirmModal').classList.add('active');
         }
@@ -171,6 +223,7 @@
         function closeConfirmModal() {
             document.getElementById('confirmModal').classList.remove('active');
             confirmCallback = null;
+            foundOrder = null;
         }
 
         function executeConfirm() {
@@ -178,6 +231,82 @@
                 confirmCallback();
             }
             closeConfirmModal();
+        }
+
+        // =============================================
+        // ПРОВЕРКА КОДА
+        // =============================================
+        function checkCode() {
+            const code = document.getElementById('orderCodeInput').value.trim();
+            const statusEl = document.getElementById('codeStatus');
+            const btn = document.getElementById('issueBtn');
+            
+            if (code.length !== 4) {
+                statusEl.className = 'code-status empty';
+                statusEl.textContent = 'Введите 4 цифры';
+                btn.disabled = true;
+                foundOrder = null;
+                return;
+            }
+            
+            // Ищем заказ с таким кодом и статусом 'pvz'
+            const order = orders.find(o => o.code === code && o.status === 'pvz');
+            
+            if (order) {
+                const buyer = users.find(u => u.id === order.userId);
+                statusEl.className = 'code-status valid';
+                statusEl.textContent = `✅ Заказ #${order.id} (${buyer ? buyer.name : 'Неизвестно'})`;
+                btn.disabled = false;
+                foundOrder = order;
+            } else {
+                // Проверяем, есть ли заказ с таким кодом, но не готов
+                const existing = orders.find(o => o.code === code);
+                if (existing) {
+                    statusEl.className = 'code-status invalid';
+                    statusEl.textContent = `❌ Заказ #${existing.id} не готов к выдаче (статус: ${existing.status})`;
+                } else {
+                    statusEl.className = 'code-status invalid';
+                    statusEl.textContent = '❌ Код не найден';
+                }
+                btn.disabled = true;
+                foundOrder = null;
+            }
+        }
+
+        // =============================================
+        // ВЫДАЧА ЗАКАЗА ПО КОДУ
+        // =============================================
+        function issueByCode() {
+            if (!foundOrder) {
+                showNotification('❌ Заказ не найден или не готов', 'error');
+                return;
+            }
+            
+            const buyer = users.find(u => u.id === foundOrder.userId);
+            
+            showConfirmModal(
+                '📦 Выдача заказа',
+                'Выдать заказ?',
+                '📦',
+                {
+                    id: foundOrder.id,
+                    buyer: buyer ? buyer.name : 'Неизвестно',
+                    total: foundOrder.total,
+                    code: foundOrder.code
+                },
+                function() {
+                    const result = issueOrder(foundOrder.id);
+                    if (result) {
+                        document.getElementById('orderCodeInput').value = '';
+                        document.getElementById('codeStatus').className = 'code-status empty';
+                        document.getElementById('codeStatus').textContent = 'Введите код';
+                        document.getElementById('issueBtn').disabled = true;
+                        foundOrder = null;
+                        renderPVZOrders();
+                        showNotification(`✅ Заказ #${foundOrder ? foundOrder.id : ''} выдан!`, 'success');
+                    }
+                }
+            );
         }
 
         // =============================================
@@ -190,30 +319,6 @@
         function logout() {
             localStorage.removeItem('currentUser');
             window.location.href = '/market/';
-        }
-
-        // =============================================
-        // ВЫДАЧА ЗАКАЗА ПО КОДУ
-        // =============================================
-        function issueByCode() {
-            const code = document.getElementById('orderCodeInput').value.trim();
-            if (code.length !== 4) {
-                showNotification('❌ Введите 4-значный код!', 'error');
-                return;
-            }
-            
-            showConfirmModal(
-                '📦 Выдача заказа',
-                'Выдать заказ по коду ' + code + '?',
-                '📦',
-                function() {
-                    const result = issueOrderByCode(code);
-                    if (result) {
-                        document.getElementById('orderCodeInput').value = '';
-                        renderPVZOrders();
-                    }
-                }
-            );
         }
 
         // =============================================
@@ -237,7 +342,7 @@
                 'new': '🆕 Новый', 
                 'processing': '⚙️ В обработке', 
                 'delivery': '🚚 В доставке', 
-                'pvz': '📦 В ПВЗ', 
+                'pvz': '📦 В ПВЗ (готов к выдаче)', 
                 'completed': '✅ Выдан' 
             };
             
@@ -260,11 +365,6 @@
                     actions = `<span style="color:#4CAF50;font-weight:bold;margin-top:10px;display:block;">✅ Заказ выдан</span>`;
                 }
                 
-                let codeHtml = '';
-                if (o.status === 'pvz' || o.status === 'completed') {
-                    codeHtml = `<div style="margin-top:6px;"><strong>Код:</strong> <span style="font-family:monospace;font-size:18px;font-weight:bold;color:#4CAF50;letter-spacing:2px;">${o.code}</span></div>`;
-                }
-                
                 return `
                     <div class="order-card">
                         <div class="header">
@@ -275,7 +375,7 @@
                         <div><strong>Покупатель:</strong> ${buyer ? buyer.name : 'Неизвестно'}</div>
                         <div><strong>Товары:</strong> ${productsList}</div>
                         <div class="total">💰 ${o.total.toLocaleString()} ₽</div>
-                        ${codeHtml}
+                        <div style="margin-top:6px;"><strong>Код:</strong> <span style="font-family:monospace;font-size:18px;font-weight:bold;color:#4CAF50;letter-spacing:2px;">${o.code}</span></div>
                         ${actions}
                     </div>
                 `;
@@ -283,10 +383,21 @@
         }
 
         function confirmIssueOrder(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const buyer = users.find(u => u.id === order.userId);
+            
             showConfirmModal(
                 '📦 Выдача заказа',
-                'Выдать заказ #' + orderId + '?',
+                'Выдать заказ?',
                 '📦',
+                {
+                    id: order.id,
+                    buyer: buyer ? buyer.name : 'Неизвестно',
+                    total: order.total,
+                    code: order.code
+                },
                 function() {
                     const result = window.issueOrder(orderId);
                     if (result) renderPVZOrders();
