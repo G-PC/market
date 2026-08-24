@@ -13,24 +13,44 @@
             text-decoration: none;
         }
         .back-link:hover { text-decoration: underline; }
-        .order-code {
-            display: inline-block;
-            background: #4CAF50;
-            color: white;
-            font-size: 18px;
-            font-weight: bold;
-            padding: 4px 16px;
-            border-radius: 6px;
-            letter-spacing: 2px;
-            font-family: monospace;
-        }
+        
         .order-code-container {
-            margin: 8px 0;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f0f8f0;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
         }
         .order-code-label {
             font-size: 13px;
-            color: #666;
+            color: #555;
+            font-weight: 500;
         }
+        .order-code-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #4CAF50;
+            letter-spacing: 4px;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            user-select: all;
+            padding: 4px 12px;
+            background: white;
+            border-radius: 6px;
+            display: inline-block;
+            border: 2px dashed #4CAF50;
+            transition: 0.3s;
+        }
+        .order-code-value:hover {
+            background: #e8f5e9;
+            border-color: #2e7d32;
+        }
+        .order-code-hint {
+            font-size: 12px;
+            color: #999;
+            margin-left: 10px;
+        }
+
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -65,21 +85,14 @@
             from { transform: scale(0.9); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
-        .code-copy {
-            background: #f0f0f0;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            display: inline-block;
-            transition: 0.3s;
-            font-family: monospace;
-            font-size: 20px;
-            font-weight: bold;
-            color: #4CAF50;
-            letter-spacing: 3px;
-        }
-        .code-copy:hover {
-            background: #e0e0e0;
+        
+        .status-ready {
+            background: #4CAF50;
+            color: white;
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
         }
     </style>
 </head>
@@ -98,6 +111,14 @@
     <main>
         <a href="../super/dashboard.html" class="back-link">← Назад в супер-панель</a>
         <h1>📋 Мои заказы</h1>
+        
+        <div style="background:#e3f2fd;padding:12px 16px;border-radius:8px;margin-bottom:20px;border-left:4px solid #2196F3;">
+            <p style="margin:0;font-size:14px;color:#0d47a1;">
+                🔑 <strong>Код получения</strong> — покажите этот код сотруднику ПВЗ, чтобы получить заказ.
+                Код действителен, когда заказ имеет статус <strong>"В ПВЗ"</strong>.
+            </p>
+        </div>
+
         <div class="card" id="ordersContainer"></div>
     </main>
 
@@ -129,7 +150,7 @@
             navigator.clipboard.writeText(code).then(() => {
                 showNotification('✅ Код скопирован!', 'success');
             }).catch(() => {
-                // Fallback
+                // Fallback для старых браузеров
                 const input = document.createElement('input');
                 input.value = code;
                 document.body.appendChild(input);
@@ -157,6 +178,7 @@
                         <a href="../catalog.html" class="btn btn-green">Перейти в каталог</a>
                     </div>
                 `;
+                updateCartBadge();
                 return;
             }
             
@@ -176,32 +198,31 @@
                     return `${p ? p.name : 'Товар удален'} × ${item.quantity}`;
                 }).join(', ');
                 
-                // Показываем код только если заказ в ПВЗ или выдан
-                let codeHtml = '';
-                if (o.status === 'pvz' || o.status === 'completed') {
-                    codeHtml = `
-                        <div class="order-code-container">
-                            <span class="order-code-label">🔑 Код получения:</span>
-                            <div style="margin-top:4px;">
-                                <span class="code-copy" onclick="copyCode('${o.code}')" title="Нажмите чтобы скопировать">
-                                    ${o.code}
-                                </span>
-                                <span style="font-size:12px;color:#999;margin-left:8px;">(нажмите для копирования)</span>
-                            </div>
-                        </div>
-                    `;
-                }
+                // ===== КОД ПОКАЗЫВАЕТСЯ ВСЕГДА! =====
+                const isReady = o.status === 'pvz';
                 
                 html += `
-                    <div class="order-card">
+                    <div class="order-card" style="${isReady ? 'border-left-color: #4CAF50; border-left-width: 6px;' : ''}">
                         <div class="header">
                             <span class="id">Заказ #${o.id}</span>
                             <span class="date">📅 ${o.date}</span>
                             <span class="status status-${o.status}">${statusLabels[o.status] || o.status}</span>
+                            ${isReady ? '<span class="status-ready">✅ ГОТОВ К ВЫДАЧЕ</span>' : ''}
                         </div>
                         <div><strong>Товары:</strong> ${productsList}</div>
                         <div class="total">💰 ${o.total.toLocaleString()} ₽</div>
-                        ${codeHtml}
+                        
+                        <!-- ===== КОД ВСЕГДА ВИДЕН ===== -->
+                        <div class="order-code-container">
+                            <div class="order-code-label">🔑 Код получения заказа:</div>
+                            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:4px;">
+                                <span class="order-code-value" onclick="copyCode('${o.code}')" title="Нажмите чтобы скопировать">
+                                    ${o.code}
+                                </span>
+                                <span class="order-code-hint">(нажмите на код, чтобы скопировать)</span>
+                                ${isReady ? '<span style="color:#4CAF50;font-weight:500;">✅ Действителен</span>' : '<span style="color:#FF9800;font-weight:500;">⏳ Ожидайте готовности</span>'}
+                            </div>
+                        </div>
                     </div>
                 `;
             });
