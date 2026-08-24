@@ -1,11 +1,10 @@
 // ============================================
-// ПОЛЬЗОВАТЕЛИ (С СУПЕРПОЛЬЗОВАТЕЛЕМ!)
+// ПОЛЬЗОВАТЕЛИ
 // ============================================
 let users = [
     { id: 1, email: 'admin@mail.ru', password: '123456', role: 'admin', name: 'Администратор' },
     { id: 2, email: 'user@mail.ru', password: '123456', role: 'user', name: 'Иван Петров' },
     { id: 3, email: 'pvz@mail.ru', password: '123456', role: 'pvz', name: 'ПВЗ №1' },
-    // ===== СУПЕРПОЛЬЗОВАТЕЛЬ =====
     { id: 4, email: 'super@mail.ru', password: '123456', role: 'super', name: 'Суперпользователь' }
 ];
 let nextUserId = 5;
@@ -23,13 +22,20 @@ let products = [
 let nextProductId = 6;
 
 // ============================================
-// ЗАКАЗЫ
+// ЗАКАЗЫ (С КОДОМ ПОЛУЧЕНИЯ)
 // ============================================
 let orders = [
-    { id: 1, userId: 2, products: [{id: 1, quantity: 1}], total: 25000, status: 'new', date: '2026-08-20', pvzId: 3 },
-    { id: 2, userId: 2, products: [{id: 2, quantity: 2}], total: 10000, status: 'processing', date: '2026-08-21', pvzId: 3 }
+    { id: 1, userId: 2, products: [{id: 1, quantity: 1}], total: 25000, status: 'new', date: '2026-08-20', pvzId: 3, code: '1234' },
+    { id: 2, userId: 2, products: [{id: 2, quantity: 2}], total: 10000, status: 'processing', date: '2026-08-21', pvzId: 3, code: '5678' }
 ];
 let nextOrderId = 3;
+
+// ============================================
+// ГЕНЕРАЦИЯ 4-ЗНАЧНОГО КОДА
+// ============================================
+function generateOrderCode() {
+    return String(Math.floor(1000 + Math.random() * 9000));
+}
 
 // ============================================
 // LOCAL STORAGE
@@ -131,7 +137,7 @@ function deleteProduct(id) {
 }
 
 // ============================================
-// ЗАКАЗЫ: ФУНКЦИИ
+// ЗАКАЗЫ: ФУНКЦИИ (С КОДОМ)
 // ============================================
 function createOrder(userId, items) {
     const total = items.reduce((sum, item) => {
@@ -146,7 +152,8 @@ function createOrder(userId, items) {
         total: total,
         status: 'new',
         date: new Date().toISOString().split('T')[0],
-        pvzId: 3
+        pvzId: 3,
+        code: generateOrderCode() // Генерируем 4-значный код
     };
     orders.push(order);
     saveOrders();
@@ -176,8 +183,21 @@ function getAllOrders() {
 }
 
 // ============================================
-// ВЫДАЧА ЗАКАЗА
+// ВЫДАЧА ЗАКАЗА ПО КОДУ
 // ============================================
+function issueOrderByCode(code) {
+    const order = orders.find(o => o.code === code && o.status === 'pvz');
+    if (!order) {
+        showNotification('❌ Неверный код или заказ не готов', 'error');
+        return false;
+    }
+    
+    order.status = 'completed';
+    saveOrders();
+    showNotification(`✅ Заказ #${order.id} выдан! Код ${code}`, 'success');
+    return true;
+}
+
 function issueOrder(orderId) {
     const order = orders.find(o => o.id === orderId);
     if (!order) {
@@ -197,7 +217,7 @@ function issueOrder(orderId) {
     
     order.status = 'completed';
     saveOrders();
-    showNotification(`✅ Заказ #${orderId} выдан!`, 'success');
+    showNotification(`✅ Заказ #${orderId} выдан! Код ${order.code}`, 'success');
     return true;
 }
 
@@ -375,6 +395,8 @@ window.getPVZOrders = getPVZOrders;
 window.updateOrderStatus = updateOrderStatus;
 window.getAllOrders = getAllOrders;
 window.issueOrder = issueOrder;
+window.issueOrderByCode = issueOrderByCode;
+window.generateOrderCode = generateOrderCode;
 
 window.getCart = getCart;
 window.saveCart = saveCart;
