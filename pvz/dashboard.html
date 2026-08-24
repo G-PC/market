@@ -5,16 +5,117 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ПВЗ - Панель</title>
     <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        .back-link:hover { text-decoration: underline; }
+
+        /* ===== КАСТОМНОЕ МОДАЛЬНОЕ ОКНО ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-box {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: scaleIn 0.3s ease;
+            text-align: center;
+        }
+        .modal-box .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .modal-box h3 {
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .modal-box p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .modal-box .order-id {
+            font-weight: bold;
+            color: #4CAF50;
+            font-size: 18px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .modal-actions .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: 500;
+            color: white;
+        }
+        .modal-actions .btn-cancel {
+            background: #e0e0e0;
+            color: #333;
+        }
+        .modal-actions .btn-cancel:hover {
+            background: #d0d0d0;
+        }
+        .modal-actions .btn-confirm {
+            background: #4CAF50;
+        }
+        .modal-actions .btn-confirm:hover {
+            background: #388E3C;
+        }
+        .modal-actions .btn-danger {
+            background: #f44336;
+        }
+        .modal-actions .btn-danger:hover {
+            background: #d32f2f;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+    </style>
 </head>
 <body>
     <header>
         <div class="logo">🛍️ Маркет</div>
         <nav>
-            <a href="dashboard.html" class="active">📊 Панель</a>
-            <button onclick="logout()" class="btn btn-red">🚪 Выйти</button>
+            <a href="../super/dashboard.html">👑 Супер</a>
+            <a href="dashboard.html" class="active">📊 ПВЗ</a>
+            <button onclick="showLogoutModal()" class="btn btn-red" style="padding:8px 16px;font-size:14px;">🚪 Выйти</button>
         </nav>
     </header>
     <main>
+        <a href="../super/dashboard.html" class="back-link">← Назад в супер-панель</a>
         <h1>📦 ПВЗ: <span id="pvzName"></span></h1>
         
         <div class="stats-grid">
@@ -34,11 +135,86 @@
         
         <div id="ordersContainer"></div>
     </main>
+
+    <!-- ===== МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ ===== -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal-box">
+            <div class="icon" id="modalIcon">⚠️</div>
+            <h3 id="modalTitle">Подтверждение</h3>
+            <p id="modalMessage">Вы уверены?</p>
+            <div class="modal-actions">
+                <button class="btn btn-cancel" onclick="closeConfirmModal()">Отмена</button>
+                <button class="btn btn-danger" id="modalConfirmBtn" onclick="executeConfirm()">✅ Подтвердить</button>
+            </div>
+        </div>
+    </div>
+
     <script src="../js/app.js"></script>
     <script>
+        // =============================================
+        // ПЕРЕМЕННЫЕ ДЛЯ МОДАЛЬНОГО ОКНА
+        // =============================================
+        let confirmCallback = null;
+
+        // =============================================
+        // КАСТОМНОЕ МОДАЛЬНОЕ ОКНО
+        // =============================================
+        function showConfirmModal(title, message, icon = '⚠️', callback) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalMessage').textContent = message;
+            document.getElementById('modalIcon').textContent = icon;
+            confirmCallback = callback;
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.remove('active');
+            confirmCallback = null;
+        }
+
+        function executeConfirm() {
+            if (confirmCallback) {
+                confirmCallback();
+            }
+            closeConfirmModal();
+        }
+
+        // =============================================
+        // ВЫХОД С ПОДТВЕРЖДЕНИЕМ
+        // =============================================
+        function showLogoutModal() {
+            showConfirmModal(
+                '🚪 Выход из аккаунта',
+                'Вы уверены, что хотите выйти?',
+                '🚪',
+                function() {
+                    localStorage.removeItem('currentUser');
+                    window.location.href = '/market/';
+                }
+            );
+        }
+
+        // =============================================
+        // ВЫДАЧА ЗАКАЗА С ПОДТВЕРЖДЕНИЕМ
+        // =============================================
+        function confirmIssueOrder(orderId) {
+            showConfirmModal(
+                '📦 Выдача заказа',
+                'Выдать заказ #' + orderId + '?',
+                '📦',
+                function() {
+                    const result = window.issueOrder(orderId);
+                    if (result) renderPVZOrders();
+                }
+            );
+        }
+
+        // =============================================
+        // ОСТАЛЬНЫЕ ФУНКЦИИ
+        // =============================================
         function renderPVZOrders() {
             const user = JSON.parse(localStorage.getItem('currentUser'));
-            const pvzOrders = getPVZOrders(user.id);
+            const pvzOrders = user.role === 'super' ? getAllOrders() : getPVZOrders(user.id);
             const container = document.getElementById('ordersContainer');
             
             document.getElementById('totalOrders').textContent = pvzOrders.length;
@@ -46,7 +222,7 @@
             document.getElementById('issuedOrders').textContent = pvzOrders.filter(o => o.status === 'completed').length;
             
             if (pvzOrders.length === 0) {
-                container.innerHTML = '<div class="empty-state"><p>📭 Нет заказов в этом ПВЗ</p></div>';
+                container.innerHTML = '<div class="empty-state"><p>📭 Нет заказов</p></div>';
                 return;
             }
             
@@ -69,10 +245,9 @@
                 if (o.status === 'delivery') {
                     actions = `<button onclick="markReady(${o.id})" class="btn btn-green" style="margin-top:10px;">✅ Готов к выдаче</button>`;
                 } else if (o.status === 'pvz') {
-                    // ===== 1. КНОПКА ВЫДАЧИ ЗАКАЗА =====
                     actions = `
-                        <button onclick="markReady(${o.id})" class="btn btn-green" style="margin-top:10px;margin-right:10px;">✅ Готов к выдаче</button>
-                        <button onclick="issueOrder(${o.id})" class="btn btn-blue" style="margin-top:10px;">📦 Выдать заказ</button>
+                        <button onclick="markReady(${o.id})" class="btn btn-green" style="margin-top:10px;margin-right:10px;">✅ Готов</button>
+                        <button onclick="confirmIssueOrder(${o.id})" class="btn btn-blue" style="margin-top:10px;">📦 Выдать</button>
                     `;
                 } else if (o.status === 'completed') {
                     actions = `<span style="color:#4CAF50;font-weight:bold;margin-top:10px;display:block;">✅ Заказ выдан</span>`;
@@ -94,35 +269,11 @@
             }).join('');
         }
 
-        // =============================================
-        // ===== 1. ВЫДАЧА ЗАКАЗА =====
-        // =============================================
-        function issueOrder(orderId) {
-            if (!confirm(`Выдать заказ #${orderId}?`)) return;
-            
-            const result = window.issueOrder(orderId);
-            if (result) {
-                renderPVZOrders();
-            }
-        }
-
         function markReady(orderId) {
             if (updateOrderStatus(orderId, 'pvz')) {
                 showNotification('✅ Заказ готов к выдаче!', 'success');
                 renderPVZOrders();
             }
-        }
-
-        function markCompleted(orderId) {
-            if (updateOrderStatus(orderId, 'completed')) {
-                showNotification('✅ Заказ выдан!', 'success');
-                renderPVZOrders();
-            }
-        }
-
-        function logout() {
-            localStorage.removeItem('currentUser');
-            window.location.href = '/market/';
         }
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -132,7 +283,7 @@
                 window.location.href = '/market/';
                 return;
             }
-            document.getElementById('pvzName').textContent = user.name;
+            document.getElementById('pvzName').textContent = user.role === 'super' ? 'Супер (все заказы)' : user.name;
             renderPVZOrders();
         });
     </script>
