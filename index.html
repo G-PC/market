@@ -55,10 +55,18 @@
             border-radius: 12px;
             margin-left: 5px;
         }
-        .demo .super { color: #9C27B0; font-weight: 600; }
-        .demo .admin { color: #f44336; font-weight: 600; }
-        .demo .user { color: #2196F3; font-weight: 600; }
-        .demo .pvz { color: #4CAF50; font-weight: 600; }
+        .login-hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+            text-align: center;
+        }
+        .login-hint span {
+            background: #f0f0f0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
@@ -76,8 +84,8 @@
             <h2>Вход в систему</h2>
             <form id="loginFormSubmit">
                 <div class="form-group">
-                    <label>📧 Email</label>
-                    <input type="email" id="loginEmail" placeholder="example@mail.ru" value="super@mail.ru" required>
+                    <label>📧 Email или логин</label>
+                    <input type="text" id="loginEmail" placeholder="example@mail.ru или admin" value="admin" required>
                 </div>
                 <div class="form-group">
                     <label>🔒 Пароль</label>
@@ -85,12 +93,8 @@
                 </div>
                 <button type="submit" class="btn btn-green" id="loginBtn">🔑 Войти</button>
             </form>
-            <div class="demo">
-                <p><strong>📌 Демо-аккаунты:</strong></p>
-                <p>👑 <span class="super">Суперпользователь</span>: super@mail.ru / 123456</p>
-                <p>👑 <span class="admin">Администратор</span>: admin@mail.ru / 123456</p>
-                <p>👤 <span class="user">Пользователь</span>: user@mail.ru / 123456</p>
-                <p>📦 <span class="pvz">Сотрудник ПВЗ</span>: pvz@mail.ru / 123456</p>
+            <div class="login-hint">
+                💡 Можно ввести <span>email</span> (admin@mail.ru) или <span>логин</span> (admin)
             </div>
         </div>
 
@@ -138,24 +142,36 @@
         }
 
         // =============================================
+        // ПОИСК ПОЛЬЗОВАТЕЛЯ ПО EMAIL ИЛИ ЛОГИНУ
+        // =============================================
+        function findUserByEmailOrLogin(input, password) {
+            input = input.trim().toLowerCase();
+            
+            let user = users.find(u => u.email.toLowerCase() === input && u.password === password);
+            if (user) return user;
+            
+            user = users.find(u => {
+                const login = u.email.split('@')[0].toLowerCase();
+                return login === input && u.password === password;
+            });
+            
+            return user;
+        }
+
+        // =============================================
         // ВХОД
         // =============================================
         document.getElementById('loginFormSubmit').addEventListener('submit', function(e) {
             e.preventDefault();
 
-            const email = document.getElementById('loginEmail').value.trim();
+            const input = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
             const btn = document.getElementById('loginBtn');
 
             btn.innerHTML = '⏳ Вход...';
             btn.disabled = true;
 
-            console.log('🔍 Ищем пользователя:', email);
-            console.log('📋 Все пользователи:', users);
-
-            const user = users.find(u => u.email === email && u.password === password);
-
-            console.log('👤 Найден пользователь:', user);
+            const user = findUserByEmailOrLogin(input, password);
 
             if (user) {
                 localStorage.setItem('currentUser', JSON.stringify(user));
@@ -177,7 +193,7 @@
                     }
                 }, 500);
             } else {
-                showNotification('❌ Неверный email или пароль!', 'error');
+                showNotification('❌ Неверный email/логин или пароль!', 'error');
                 btn.innerHTML = '🔑 Войти';
                 btn.disabled = false;
             }
@@ -202,15 +218,15 @@
                 showNotification('Пароль должен быть минимум 6 символов!', 'error');
                 return;
             }
-            if (users.find(u => u.email === email)) {
-                showNotification('❌ Пользователь уже существует!', 'error');
+            if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+                showNotification('❌ Пользователь с таким email уже существует!', 'error');
                 return;
             }
 
             const newUser = { 
                 id: nextUserId++, 
                 name, 
-                email, 
+                email: email.toLowerCase(), 
                 password, 
                 role: role || 'user' 
             };
@@ -219,7 +235,7 @@
             
             showNotification('✅ Аккаунт создан! Войдите.', 'success');
             switchTab('login');
-            document.getElementById('loginEmail').value = email;
+            document.getElementById('loginEmail').value = email.split('@')[0];
             document.getElementById('loginPassword').value = '';
             document.getElementById('registerName').value = '';
             document.getElementById('registerPassword').value = '';
@@ -231,13 +247,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
             
-            console.log('📋 Загружены пользователи:', users);
-            
             const saved = localStorage.getItem('currentUser');
             if (saved) {
                 try {
                     const user = JSON.parse(saved);
-                    const exists = users.find(u => u.email === user.email);
+                    const exists = users.find(u => u.id === user.id);
                     if (exists) {
                         const panel = document.createElement('div');
                         panel.className = 'quick-login';
