@@ -5,30 +5,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Корзина</title>
     <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        .back-link:hover { text-decoration: underline; }
+    </style>
 </head>
 <body>
     <header>
         <div class="logo">🛍️ Маркет</div>
-        <nav>
-            <a href="../catalog.html">🛒 Каталог</a>
-            <a href="cart.html" class="active">🛍️ Корзина <span id="cartCount" class="badge">0</span></a>
-            <a href="profile.html">👤 Профиль</a>
-            <a href="orders.html">📋 Заказы</a>
-            <button onclick="logout()" class="btn btn-red">🚪 Выйти</button>
-        </nav>
+        <nav id="mainNav"></nav>
     </header>
     <main>
+        <div id="backLinkContainer"></div>
         <h1>🛍️ Корзина</h1>
         <div class="card" id="cartContainer"></div>
     </main>
+
     <script src="../js/app.js"></script>
     <script>
+        // =============================================
+        // НАВИГАЦИЯ
+        // =============================================
+        function renderNavigation() {
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            if (!user) return;
+
+            const nav = document.getElementById('mainNav');
+            const backContainer = document.getElementById('backLinkContainer');
+
+            if (user.role === 'super') {
+                backContainer.innerHTML = `<a href="../super/dashboard.html" class="back-link">← Назад в супер-панель</a>`;
+                nav.innerHTML = `
+                    <a href="../super/dashboard.html">👑 Супер-панель</a>
+                    <a href="../admin/products.html">📦 Товары</a>
+                    <a href="../admin/orders.html">📋 Заказы</a>
+                    <a href="../pvz/dashboard.html">📦 ПВЗ</a>
+                    <a href="../catalog.html">🛒 Каталог</a>
+                    <a href="cart.html" class="active">🛍️ Корзина <span id="cartCount" class="badge">0</span></a>
+                    <a href="profile.html">👤 Профиль</a>
+                    <a href="orders.html">📋 Мои заказы</a>
+                    <button onclick="showLogoutModal()" class="btn btn-red" style="padding:8px 16px;font-size:14px;">🚪 Выйти</button>
+                `;
+            } else if (user.role === 'user') {
+                nav.innerHTML = `
+                    <a href="../catalog.html">🛒 Каталог</a>
+                    <a href="cart.html" class="active">🛍️ Корзина <span id="cartCount" class="badge">0</span></a>
+                    <a href="profile.html">👤 Профиль</a>
+                    <a href="orders.html">📋 Заказы</a>
+                    <button onclick="showLogoutModal()" class="btn btn-red" style="padding:8px 16px;font-size:14px;">🚪 Выйти</button>
+                `;
+            } else if (user.role === 'admin') {
+                backContainer.innerHTML = `<a href="../admin/dashboard.html" class="back-link">← Назад в админ-панель</a>`;
+                nav.innerHTML = `
+                    <a href="../admin/dashboard.html">📊 Дашборд</a>
+                    <a href="../admin/products.html">📦 Товары</a>
+                    <a href="../admin/orders.html">📋 Заказы</a>
+                    <a href="../catalog.html">🛒 Каталог</a>
+                    <button onclick="showLogoutModal()" class="btn btn-red" style="padding:8px 16px;font-size:14px;">🚪 Выйти</button>
+                `;
+            } else if (user.role === 'pvz') {
+                backContainer.innerHTML = `<a href="../pvz/dashboard.html" class="back-link">← Назад в панель ПВЗ</a>`;
+                nav.innerHTML = `
+                    <a href="../pvz/dashboard.html">📊 Панель</a>
+                    <a href="../catalog.html">🛒 Каталог</a>
+                    <button onclick="showLogoutModal()" class="btn btn-red" style="padding:8px 16px;font-size:14px;">🚪 Выйти</button>
+                `;
+            }
+            updateCartBadge();
+        }
+
+        function showLogoutModal() {
+            if (confirm('Выйти из аккаунта?')) {
+                localStorage.removeItem('currentUser');
+                window.location.href = '/market/';
+            }
+        }
+
+        // =============================================
+        // ОТОБРАЖЕНИЕ КОРЗИНЫ
+        // =============================================
         function renderCart() {
             const cart = getCart();
             const container = document.getElementById('cartContainer');
             
             if (cart.length === 0) {
                 container.innerHTML = `<div class="empty-state"><p>🛒 Корзина пуста</p><a href="../catalog.html" class="btn btn-green">Перейти в каталог</a></div>`;
+                updateCartBadge();
                 return;
             }
             
@@ -89,18 +156,20 @@
             const order = createOrder(user.id, items);
             clearCart();
             renderCart();
-            showNotification(`✅ Заказ #${order.id} оформлен!`, 'success');
+            showNotification(`✅ Заказ #${order.id} оформлен! Код получения: ${order.code}`, 'success');
         }
 
-        function logout() {
-            localStorage.removeItem('currentUser');
-            window.location.href = '/market/';
-        }
-
+        // =============================================
+        // ИНИЦИАЛИЗАЦИЯ
+        // =============================================
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
             const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
-            if (!user || user.role !== 'user') { window.location.href = '/market/'; return; }
+            if (!user) {
+                window.location.href = '/market/';
+                return;
+            }
+            renderNavigation();
             renderCart();
         });
     </script>
