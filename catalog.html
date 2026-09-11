@@ -6,19 +6,27 @@
     <title>Каталог</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        /* ===== ПОИСК ===== */
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        .back-link:hover { text-decoration: underline; }
+
         .search-bar {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
         .search-bar input {
             flex: 1;
+            min-width: 200px;
             padding: 12px 16px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             font-size: 16px;
-            transition: 0.3s;
         }
         .search-bar input:focus {
             outline: none;
@@ -29,7 +37,6 @@
             width: auto;
         }
 
-        /* ===== МОДАЛЬНОЕ ОКНО ===== */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -41,43 +48,21 @@
             justify-content: center;
             align-items: center;
             z-index: 10000;
-            animation: fadeIn 0.3s ease;
         }
-        .modal-overlay.active {
-            display: flex;
-        }
+        .modal-overlay.active { display: flex; }
         .modal-box {
             background: white;
             border-radius: 16px;
             padding: 30px;
             max-width: 400px;
             width: 90%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             animation: scaleIn 0.3s ease;
         }
-        .modal-box h3 {
-            font-size: 20px;
-            margin-bottom: 8px;
-            color: #333;
-        }
-        .modal-box .product-name {
-            color: #4CAF50;
-            font-weight: 600;
-        }
-        .modal-box p {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-        .modal-box .form-group {
-            margin-bottom: 15px;
-        }
-        .modal-box .form-group label {
-            display: block;
-            font-weight: 500;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
+        .modal-box h3 { font-size: 20px; margin-bottom: 8px; color: #333; }
+        .modal-box .product-name { color: #4CAF50; font-weight: 600; }
+        .modal-box p { color: #666; font-size: 14px; margin-bottom: 20px; }
+        .modal-box .form-group { margin-bottom: 15px; }
+        .modal-box .form-group label { display: block; font-weight: 500; margin-bottom: 5px; font-size: 14px; }
         .modal-box .form-group input {
             width: 100%;
             padding: 12px;
@@ -86,72 +71,30 @@
             font-size: 18px;
             text-align: center;
         }
-        .modal-box .form-group input:focus {
-            outline: none;
-            border-color: #4CAF50;
-        }
-        .modal-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 5px;
-        }
-        .modal-actions .btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: 0.3s;
-            font-weight: 500;
-            color: white;
-        }
-        .modal-actions .btn-cancel {
-            background: #e0e0e0;
-            color: #333;
-        }
-        .modal-actions .btn-cancel:hover {
-            background: #d0d0d0;
-        }
-        .modal-actions .btn-confirm {
-            background: #4CAF50;
-        }
-        .modal-actions .btn-confirm:hover {
-            background: #388E3C;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
+        .modal-box .form-group input:focus { outline: none; border-color: #4CAF50; }
+        .modal-actions { display: flex; gap: 10px; }
+        .modal-actions .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: 500; color: white; }
+        .modal-actions .btn-cancel { background: #e0e0e0; color: #333; }
+        .modal-actions .btn-confirm { background: #4CAF50; }
+        .modal-actions .btn-confirm:hover { background: #388E3C; }
         @keyframes scaleIn {
             from { transform: scale(0.9); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
-
-        .no-results {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-            font-size: 18px;
-        }
+        .no-results { text-align: center; padding: 40px; color: #666; font-size: 18px; }
     </style>
 </head>
 <body>
     <header>
         <div class="logo">🛍️ Маркет</div>
-        <nav>
-            <a href="catalog.html" class="active">🛒 Каталог</a>
-            <a href="user/cart.html">🛍️ Корзина <span id="cartCount" class="badge">0</span></a>
-            <a href="user/profile.html">👤 Профиль</a>
-            <a href="user/orders.html">📋 Заказы</a>
-            <button onclick="logout()" class="btn btn-red">🚪 Выйти</button>
+        <nav id="mainNav">
+            <!-- Навигация рендерится через JS -->
         </nav>
     </header>
     <main>
+        <div id="backLinkContainer"></div>
         <h1>🛒 Каталог товаров</h1>
 
-        <!-- ===== ПОИСК ===== -->
         <div class="search-bar">
             <input type="text" id="searchInput" placeholder="🔍 Поиск товаров..." oninput="handleSearch()">
             <button class="btn btn-green" onclick="handleSearch()">🔍 Найти</button>
@@ -161,7 +104,6 @@
         <div class="products-grid" id="catalogGrid"></div>
     </main>
 
-    <!-- ===== МОДАЛЬНОЕ ОКНО ===== -->
     <div class="modal-overlay" id="quantityModal">
         <div class="modal-box">
             <h3>🛒 Добавить в корзину</h3>
@@ -179,11 +121,77 @@
 
     <script src="js/app.js"></script>
     <script>
-        // =============================================
-        // ПЕРЕМЕННЫЕ
-        // =============================================
         let currentProductId = null;
-        let currentSearchQuery = '';
+
+        // =============================================
+        // НАВИГАЦИЯ (В ЗАВИСИМОСТИ ОТ РОЛИ)
+        // =============================================
+        function renderNavigation() {
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            if (!user) return;
+
+            const nav = document.getElementById('mainNav');
+            const backContainer = document.getElementById('backLinkContainer');
+
+            // Ссылка "Назад в супер-панель" для супера
+            if (user.role === 'super') {
+                backContainer.innerHTML = `<a href="super/dashboard.html" class="back-link">← Назад в супер-панель</a>`;
+            } else if (user.role === 'admin') {
+                backContainer.innerHTML = `<a href="admin/dashboard.html" class="back-link">← Назад в админ-панель</a>`;
+            } else if (user.role === 'pvz') {
+                backContainer.innerHTML = `<a href="pvz/dashboard.html" class="back-link">← Назад в панель ПВЗ</a>`;
+            }
+
+            // Навигация
+            let navHtml = '';
+            if (user.role === 'super') {
+                navHtml = `
+                    <a href="super/dashboard.html">👑 Супер-панель</a>
+                    <a href="admin/products.html">📦 Товары</a>
+                    <a href="admin/orders.html">📋 Заказы</a>
+                    <a href="pvz/dashboard.html">📦 ПВЗ</a>
+                    <a href="catalog.html" class="active">🛒 Каталог</a>
+                    <a href="user/cart.html">🛍️ Корзина <span id="cartCount" class="badge">0</span></a>
+                    <a href="user/profile.html">👤 Профиль</a>
+                    <a href="user/orders.html">📋 Мои заказы</a>
+                    <button onclick="showLogoutModal()" class="btn btn-red" style="padding:8px 16px;font-size:14px;">🚪 Выйти</button>
+                `;
+            } else if (user.role === 'user') {
+                navHtml = `
+                    <a href="catalog.html" class="active">🛒 Каталог</a>
+                    <a href="user/cart.html">🛍️ Корзина <span id="cartCount" class="badge">0</span></a>
+                    <a href="user/profile.html">👤 Профиль</a>
+                    <a href="user/orders.html">📋 Заказы</a>
+                    <button onclick="showLogoutModal()" class="btn btn-red" style="padding:8px 16px;font-size:14px;">🚪 Выйти</button>
+                `;
+            } else if (user.role === 'admin') {
+                navHtml = `
+                    <a href="admin/dashboard.html">📊 Дашборд</a>
+                    <a href="admin/products.html">📦 Товары</a>
+                    <a href="admin/orders.html">📋 Заказы</a>
+                    <a href="catalog.html" class="active">🛒 Каталог</a>
+                    <button onclick="showLogoutModal()" class="btn btn-red" style="padding:8px 16px;font-size:14px;">🚪 Выйти</button>
+                `;
+            } else if (user.role === 'pvz') {
+                navHtml = `
+                    <a href="pvz/dashboard.html">📊 Панель</a>
+                    <a href="catalog.html" class="active">🛒 Каталог</a>
+                    <button onclick="showLogoutModal()" class="btn btn-red" style="padding:8px 16px;font-size:14px;">🚪 Выйти</button>
+                `;
+            }
+            nav.innerHTML = navHtml;
+            updateCartBadge();
+        }
+
+        // =============================================
+        // МОДАЛЬНОЕ ОКНО ДЛЯ ВЫХОДА
+        // =============================================
+        function showLogoutModal() {
+            if (confirm('Выйти из аккаунта?')) {
+                localStorage.removeItem('currentUser');
+                window.location.href = '/market/';
+            }
+        }
 
         // =============================================
         // ОТОБРАЖЕНИЕ КАТАЛОГА
@@ -208,25 +216,17 @@
             updateCartBadge();
         }
 
-        // =============================================
-        // ===== 2. ПОИСК =====
-        // =============================================
         function handleSearch() {
             const query = document.getElementById('searchInput').value;
-            currentSearchQuery = query;
             const results = searchProducts(query);
             renderCatalog(results);
         }
 
         function clearSearch() {
             document.getElementById('searchInput').value = '';
-            currentSearchQuery = '';
             renderCatalog(products);
         }
 
-        // =============================================
-        // МОДАЛЬНОЕ ОКНО
-        // =============================================
         function openModal(productId) {
             const product = getProduct(productId);
             if (!product) {
@@ -247,9 +247,7 @@
         function confirmAddToCart() {
             if (currentProductId === null) return;
             
-            const quantityInput = document.getElementById('modalQuantity');
-            const quantity = Number(quantityInput.value);
-            
+            const quantity = Number(document.getElementById('modalQuantity').value);
             if (isNaN(quantity) || quantity <= 0) {
                 showNotification('Введите корректное количество', 'error');
                 return;
@@ -268,23 +266,13 @@
             closeModal();
         }
 
-        // Закрытие по клику на оверлей
         document.getElementById('quantityModal').addEventListener('click', function(e) {
             if (e.target === this) closeModal();
         });
 
-        // Закрытие по ESC
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') closeModal();
         });
-
-        // =============================================
-        // ВЫХОД
-        // =============================================
-        function logout() {
-            localStorage.removeItem('currentUser');
-            window.location.href = '/market/';
-        }
 
         // =============================================
         // ИНИЦИАЛИЗАЦИЯ
@@ -296,13 +284,9 @@
                 window.location.href = '/market/';
                 return;
             }
-            // Суперпользователь тоже видит каталог
-            if (user.role !== 'user' && user.role !== 'super') {
-                window.location.href = '/market/';
-                return;
-            }
+            // Все роли могут видеть каталог
+            renderNavigation();
             renderCatalog(products);
-            updateCartBadge();
         });
     </script>
 </body>
