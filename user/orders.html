@@ -50,42 +50,6 @@
             color: #999;
             margin-left: 10px;
         }
-
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-        }
-        .modal-overlay.active { display: flex; }
-        .modal-box {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
-            animation: scaleIn 0.3s ease;
-        }
-        .modal-box .icon { font-size: 48px; margin-bottom: 10px; }
-        .modal-box h3 { font-size: 20px; margin-bottom: 8px; color: #333; }
-        .modal-box p { color: #666; font-size: 14px; margin-bottom: 20px; }
-        .modal-actions { display: flex; gap: 10px; }
-        .modal-actions .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: 500; color: white; }
-        .modal-actions .btn-cancel { background: #e0e0e0; color: #333; }
-        .modal-actions .btn-danger { background: #f44336; }
-        .modal-actions .btn-danger:hover { background: #d32f2f; }
-        @keyframes scaleIn {
-            from { transform: scale(0.9); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        
         .status-ready {
             background: #4CAF50;
             color: white;
@@ -99,17 +63,10 @@
 <body>
     <header>
         <div class="logo">🛍️ Маркет</div>
-        <nav>
-            <a href="../super/dashboard.html">👑 Супер</a>
-            <a href="../catalog.html">🛒 Каталог</a>
-            <a href="cart.html">🛍️ Корзина <span id="cartCount" class="badge">0</span></a>
-            <a href="profile.html">👤 Профиль</a>
-            <a href="orders.html" class="active">📋 Заказы</a>
-            <button onclick="showLogoutModal()" class="btn btn-red" style="padding:8px 16px;font-size:14px;">🚪 Выйти</button>
-        </nav>
+        <nav id="mainNav"></nav>
     </header>
     <main>
-        <a href="../super/dashboard.html" class="back-link">← Назад в супер-панель</a>
+        <div id="backLinkContainer"></div>
         <h1>📋 Мои заказы</h1>
         
         <div style="background:#e3f2fd;padding:12px 16px;border-radius:8px;margin-bottom:20px;border-left:4px solid #2196F3;">
@@ -122,35 +79,70 @@
         <div class="card" id="ordersContainer"></div>
     </main>
 
-    <!-- ===== МОДАЛЬНОЕ ОКНО ДЛЯ ВЫХОДА ===== -->
-    <div class="modal-overlay" id="logoutModal">
-        <div class="modal-box">
-            <div class="icon">🚪</div>
-            <h3>Выход из аккаунта</h3>
-            <p>Вы уверены, что хотите выйти?</p>
-            <div class="modal-actions">
-                <button class="btn btn-cancel" onclick="document.getElementById('logoutModal').style.display='none'">Отмена</button>
-                <button class="btn btn-danger" onclick="logout()">Выйти</button>
-            </div>
-        </div>
-    </div>
-
     <script src="../js/app.js"></script>
     <script>
-        function showLogoutModal() {
-            document.getElementById('logoutModal').style.display = 'flex';
+        // =============================================
+        // НАВИГАЦИЯ
+        // =============================================
+        function renderNavigation() {
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            if (!user) return;
+
+            const nav = document.getElementById('mainNav');
+            const backContainer = document.getElementById('backLinkContainer');
+
+            if (user.role === 'super') {
+                backContainer.innerHTML = `<a href="../super/dashboard.html" class="back-link">← Назад в супер-панель</a>`;
+                nav.innerHTML = `
+                    <a href="../super/dashboard.html">👑 Супер-панель</a>
+                    <a href="../admin/products.html">📦 Товары</a>
+                    <a href="../admin/orders.html">📋 Заказы</a>
+                    <a href="../pvz/dashboard.html">📦 ПВЗ</a>
+                    <a href="../catalog.html">🛒 Каталог</a>
+                    <a href="cart.html">🛍️ Корзина <span id="cartCount" class="badge">0</span></a>
+                    <a href="profile.html">👤 Профиль</a>
+                    <a href="orders.html" class="active">📋 Мои заказы</a>
+                    <button onclick="showLogoutModal()" class="btn btn-red" style="padding:8px 16px;font-size:14px;">🚪 Выйти</button>
+                `;
+            } else if (user.role === 'user') {
+                nav.innerHTML = `
+                    <a href="../catalog.html">🛒 Каталог</a>
+                    <a href="cart.html">🛍️ Корзина <span id="cartCount" class="badge">0</span></a>
+                    <a href="profile.html">👤 Профиль</a>
+                    <a href="orders.html" class="active">📋 Заказы</a>
+                    <button onclick="showLogoutModal()" class="btn btn-red" style="padding:8px 16px;font-size:14px;">🚪 Выйти</button>
+                `;
+            } else if (user.role === 'admin') {
+                backContainer.innerHTML = `<a href="../admin/dashboard.html" class="back-link">← Назад в админ-панель</a>`;
+                nav.innerHTML = `
+                    <a href="../admin/dashboard.html">📊 Дашборд</a>
+                    <a href="../admin/products.html">📦 Товары</a>
+                    <a href="../admin/orders.html">📋 Заказы</a>
+                    <a href="../catalog.html">🛒 Каталог</a>
+                    <button onclick="showLogoutModal()" class="btn btn-red" style="padding:8px 16px;font-size:14px;">🚪 Выйти</button>
+                `;
+            } else if (user.role === 'pvz') {
+                backContainer.innerHTML = `<a href="../pvz/dashboard.html" class="back-link">← Назад в панель ПВЗ</a>`;
+                nav.innerHTML = `
+                    <a href="../pvz/dashboard.html">📊 Панель</a>
+                    <a href="../catalog.html">🛒 Каталог</a>
+                    <button onclick="showLogoutModal()" class="btn btn-red" style="padding:8px 16px;font-size:14px;">🚪 Выйти</button>
+                `;
+            }
+            updateCartBadge();
         }
 
-        function logout() {
-            localStorage.removeItem('currentUser');
-            window.location.href = '/market/';
+        function showLogoutModal() {
+            if (confirm('Выйти из аккаунта?')) {
+                localStorage.removeItem('currentUser');
+                window.location.href = '/market/';
+            }
         }
 
         function copyCode(code) {
             navigator.clipboard.writeText(code).then(() => {
                 showNotification('✅ Код скопирован!', 'success');
             }).catch(() => {
-                // Fallback для старых браузеров
                 const input = document.createElement('input');
                 input.value = code;
                 document.body.appendChild(input);
@@ -161,6 +153,9 @@
             });
         }
 
+        // =============================================
+        // ОТОБРАЖЕНИЕ ЗАКАЗОВ
+        // =============================================
         function renderOrders() {
             const user = JSON.parse(localStorage.getItem('currentUser'));
             if (!user) {
@@ -198,7 +193,6 @@
                     return `${p ? p.name : 'Товар удален'} × ${item.quantity}`;
                 }).join(', ');
                 
-                // ===== КОД ПОКАЗЫВАЕТСЯ ВСЕГДА! =====
                 const isReady = o.status === 'pvz';
                 
                 html += `
@@ -212,7 +206,6 @@
                         <div><strong>Товары:</strong> ${productsList}</div>
                         <div class="total">💰 ${o.total.toLocaleString()} ₽</div>
                         
-                        <!-- ===== КОД ВСЕГДА ВИДЕН ===== -->
                         <div class="order-code-container">
                             <div class="order-code-label">🔑 Код получения заказа:</div>
                             <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:4px;">
@@ -231,15 +224,18 @@
             updateCartBadge();
         }
 
+        // =============================================
+        // ИНИЦИАЛИЗАЦИЯ
+        // =============================================
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
             const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
-            if (!user || (user.role !== 'user' && user.role !== 'super')) {
+            if (!user) {
                 window.location.href = '/market/';
                 return;
             }
+            renderNavigation();
             renderOrders();
-            updateCartBadge();
         });
     </script>
 </body>
